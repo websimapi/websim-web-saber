@@ -24,51 +24,15 @@
                 <div id="vr-status">VR Status: Checking...</div>
             </header>
             
-            <div class="tabs">
-                <button class="tab-btn active" data-tab="local-upload">Local Upload</button>
-                <button class="tab-btn" data-tab="map-gallery">Map Gallery</button>
-            </div>
-            
-            <div id="local-upload" class="tab-content active">
-                <section id="upload-section">
-                    <h2>Upload Beat Saber Map</h2>
-                    <div class="upload-container">
-                        <label for="map-upload" class="upload-btn">Choose .zip file</label>
-                        <input type="file" id="map-upload" accept=".zip" />
-                        <div id="file-name">No file selected</div>
-                    </div>
-                    <button id="process-btn" disabled>Process Map</button>
-                    <button id="share-btn" disabled>Share Map</button>
-                </section>
-            </div>
-            
-            <div id="map-gallery" class="tab-content">
-                <section id="gallery-section">
-                    <h2>Map Gallery</h2>
-                    <div class="gallery-filters">
-                        <div class="search-container">
-                            <input type="text" id="search-input" placeholder="Search maps...">
-                            <button id="search-btn">Search</button>
-                        </div>
-                        <div class="sort-container">
-                            <label for="sort-select">Sort by:</label>
-                            <select id="sort-select">
-                                <option value="newest">Newest</option>
-                                <option value="oldest">Oldest</option>
-                                <option value="name">Name</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div id="gallery-container">
-                        <p>Loading gallery maps...</p>
-                    </div>
-                    <div id="gallery-pagination">
-                        <button id="prev-page" disabled>Previous</button>
-                        <span id="page-info">Page 1</span>
-                        <button id="next-page">Next</button>
-                    </div>
-                </section>
-            </div>
+            <section id="upload-section">
+                <h2>Upload Beat Saber Map</h2>
+                <div class="upload-container">
+                    <label for="map-upload" class="upload-btn">Choose .zip file</label>
+                    <input type="file" id="map-upload" accept=".zip" />
+                    <div id="file-name">No file selected</div>
+                </div>
+                <button id="process-btn" disabled>Process Map</button>
+            </section>
             
             <section id="map-info">
                 <h2>Map Information</h2>
@@ -107,25 +71,6 @@
                 </div>
             </div>
             <div id="vr-canvas-container"></div>
-        </div>
-        
-        <!-- Map Share Modal -->
-        <div id="share-modal" class="modal">
-            <div class="modal-content">
-                <span class="close-modal">&times;</span>
-                <h2>Share Your Map</h2>
-                <form id="share-form">
-                    <div class="form-group">
-                        <label for="share-description">Description (optional):</label>
-                        <textarea id="share-description" placeholder="Add a description for your map"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="share-tags">Tags (optional, separate with commas):</label>
-                        <input type="text" id="share-tags" placeholder="e.g., rock, energetic, beginner">
-                    </div>
-                    <button type="submit" id="confirm-share-btn">Share Map</button>
-                </form>
-            </div>
         </div>
     </div>
     
