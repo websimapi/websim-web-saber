@@ -21,10 +21,9 @@ export async function loadAudio(audioFile, uiModule) {
 
         // Store the audio buffer
         audioBuffer = decodedBuffer;
-        // Update main state or pass it back if needed elsewhere
-        // For now, keep it internal to this module
-
+        
         uiModule.logStatus("Audio loaded successfully!");
+        return true;
     } catch (error) {
          uiModule.logStatus(`Failed to load audio: ${error.message}`, true);
          throw error; // Re-throw to be caught by processMap
@@ -64,9 +63,10 @@ export function playMap(state, uiModule, visualizationModule) {
         startTime = audioContext.currentTime; // Record the start time
         audioSource.start(0); // Start immediately (offset 0)
         state.isPlaying = true;
+        state.audio = { audioContext, audioBuffer, startTime };
 
         // Reset note positions before starting animation
-        visualizationModule.resetNotePositions(state.currentDifficulty, state.beatLength);
+        visualizationModule.resetNotePositions();
 
         // Update UI
         uiModule.enablePlayButton(false);
@@ -110,11 +110,11 @@ export function pauseMap(state, uiModule) {
 }
 
 // Callback function to update progress bar from visualization loop
-function updateAudioProgress() {
-    if (!state.isPlaying || !audioContext || !audioBuffer) return;
+function updateAudioProgress(state) {
+    if (!state.isPlaying || !state.audio.audioContext || !state.audio.audioBuffer) return;
 
-    const currentTime = audioContext.currentTime - startTime;
-    const duration = audioBuffer.duration;
+    const currentTime = state.audio.audioContext.currentTime - state.audio.startTime;
+    const duration = state.audio.audioBuffer.duration;
     if (duration > 0) {
         const progress = Math.min((currentTime / duration) * 100, 100);
         import('./ui.js').then(ui => ui.updateProgressBar(progress));
@@ -135,7 +135,7 @@ function updateAudioProgress() {
 
 // Function to get current beat (used by visualization)
 export function getCurrentBeat(beatLength) {
-    if (!state.isPlaying || !audioContext || beatLength <= 0) {
+    if (!audioContext || beatLength <= 0) {
         return 0;
     }
     const currentTime = audioContext.currentTime - startTime;

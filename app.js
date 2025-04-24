@@ -9,8 +9,8 @@ import * as file from './file.js';
 import * as map from './map.js';
 import * as audio from './audio.js';
 import * as visualization from './visualization.js';
-import * as vr from './vr.js';
 
+// Create a global state object to share between modules
 const state = {
     isVRSupported: false,
     isInVR: false,
@@ -18,14 +18,44 @@ const state = {
     currentDifficulty: null,
     isPlaying: false,
     extractedFiles: null,
+    audio: null,
+    beatLength: 0
 };
+
+// Export the state for other modules to access
+window.appState = state;
 
 function init() {
     ui.logStatus("Initializing application...");
-    vr.checkVRSupport(state, ui.updateVRStatus, ui.logStatus);
+    checkVRSupport();
     setupEventListeners();
-    visualization.setupThreeJS(state, vr.setupVRControllers, onSessionStart, onSessionEnd);
+    visualization.setupThreeJS(state);
     ui.logStatus("Application initialized and ready!");
+}
+
+function checkVRSupport() {
+    if ('xr' in navigator) {
+        navigator.xr.isSessionSupported('immersive-vr')
+            .then(supported => {
+                state.isVRSupported = supported;
+                ui.updateVRStatus(supported);
+                ui.logStatus(`VR ${supported ? 'is' : 'is not'} supported`);
+            })
+            .catch(error => {
+                state.isVRSupported = false;
+                ui.updateVRStatus(false);
+                ui.logStatus(`Error checking VR support: ${error.message}`, true);
+            });
+    } else {
+        state.isVRSupported = false;
+        ui.updateVRStatus(false);
+        ui.logStatus("WebXR not available in this browser", true);
+    }
+}
+
+function setupVRControllers(renderer, scene) {
+    // This is a placeholder for VR controller setup
+    // Implementation would go here when VR functionality is expanded
 }
 
 function onSessionStart() {
@@ -50,3 +80,7 @@ function setupEventListeners() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+// Export functions needed by other modules
+export { setupVRControllers, onSessionStart, onSessionEnd };
+

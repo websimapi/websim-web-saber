@@ -19,8 +19,12 @@ export function handleFileSelect(event, uiModule) {
 
 // Process the uploaded map
 export async function processMap(state, uiModule, mapModule, audioModule, visualizationModule) {
-    const file = dom.uploadInput.files[0];
-    if (!file) return;
+    const fileInput = document.getElementById('map-upload');
+    const file = fileInput.files[0];
+    if (!file) {
+        uiModule.logStatus("No file selected", true);
+        return;
+    }
 
     uiModule.logStatus("Processing map file...");
     uiModule.enableProcessButton(false);
@@ -46,10 +50,10 @@ export async function processMap(state, uiModule, mapModule, audioModule, visual
         state.currentMap = infoData;
         state.beatLength = 60 / infoData._beatsPerMinute;
 
-        // Load and display map information (pass necessary modules/state)
-        uiModule.displayMapInfo(infoData, state, visualizationModule, { findFileInZip }); // Pass findFileInZip helper
+        // Display map information
+        uiModule.displayMapInfo(infoData, state, visualizationModule, { findFileInZip });
 
-        // Load audio file - do this *after* displaying info, so user sees progress
+        // Load audio file
         const audioFile = findFileInZip(extractedFiles, infoData._songFilename);
         if (!audioFile) {
             throw new Error(`Audio file '${infoData._songFilename}' not found in the ZIP archive`);
@@ -57,18 +61,15 @@ export async function processMap(state, uiModule, mapModule, audioModule, visual
 
         // Load audio
         await audioModule.loadAudio(audioFile, uiModule);
+        state.audio = true;
 
-        // Difficulty is loaded via UI interaction, so we don't explicitly load it here anymore.
-        // Playback is enabled once a difficulty is successfully loaded.
-        uiModule.logStatus("Map processed. Select a difficulty to load notes.");
-        // Don't enable play yet, wait for difficulty load
+        uiModule.logStatus("Map processed successfully! Ready to play.");
 
     } catch (error) {
         uiModule.logStatus(`Error processing map: ${error.message}`, true);
         uiModule.enableProcessButton(true); // Re-enable on error
     }
 }
-
 
 // Extract ZIP file
 async function extractZipFile(file, uiModule) {
@@ -102,7 +103,6 @@ function findInfoFile(files) {
     }
     return null;
 }
-
 
 // Find a file in the ZIP archive, accounting for potential folder paths
 export function findFileInZip(files, filename) {

@@ -27,27 +27,22 @@ export async function loadDifficulty(difficultyFile, state, logStatus, visualiza
 
         state.currentDifficulty = diffData;
 
-        // Clear existing notes and obstacles
+        // Prepare visualization
         visualizationModule.clearVisualization();
-
-        // Recreate player area (in case it was removed)
         visualizationModule.createPlayerArea();
-
-        // Prepare notes and obstacles for visualization
-        visualizationModule.prepareVisualization(diffData, state.beatLength, logStatus); // Pass beatLength
+        visualizationModule.prepareVisualization(diffData, state.beatLength, logStatus);
 
         logStatus(`Difficulty '${difficultyFile}' loaded successfully. Ready to play.`);
+        
         // Enable play button now that a difficulty is loaded
-        // This assumes the audio is already loaded from processMap
-        if (state.audio) { // Check if audio state exists (should be loaded by now)
-             import('./ui.js').then(ui => ui.enablePlayButton(true));
-        } else {
-            logStatus("Audio not ready, cannot enable play.", true);
+        if (state.audio) {
+            const ui = await import('./ui.js');
+            ui.enablePlayButton(true);
         }
-
 
     } catch (error) {
         logStatus(`Error loading difficulty: ${error.message}`, true);
-         import('./ui.js').then(ui => ui.enablePlayButton(false)); // Ensure play is disabled on error
+        const ui = await import('./ui.js');
+        ui.enablePlayButton(false); // Ensure play is disabled on error
     }
 }
