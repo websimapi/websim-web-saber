@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beat Saber Custom Map Loader</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/",
+            "jszip": "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div id="app">
+        <div id="desktop-view">
+            <header>
+                <h1>Beat Saber Custom Map Loader</h1>
+                <div id="vr-status">VR Status: Checking...</div>
+            </header>
+            
+            <section id="upload-section">
+                <h2>Upload Beat Saber Map</h2>
+                <div class="upload-container">
+                    <label for="map-upload" class="upload-btn">Choose .zip file</label>
+                    <input type="file" id="map-upload" accept=".zip" />
+                    <div id="file-name">No file selected</div>
+                </div>
+                <button id="process-btn" disabled>Process Map</button>
+            </section>
+            
+            <section id="map-info">
+                <h2>Map Information</h2>
+                <div id="map-details">
+                    <p>Upload a Beat Saber map to see details.</p>
+                </div>
+            </section>
+            
+            <section id="status-section">
+                <h2>Status</h2>
+                <div id="status-log">
+                    <p>Ready to process Beat Saber maps.</p>
+                </div>
+            </section>
+            
+            <section id="visualization">
+                <h2>Map Preview</h2>
+                <div id="canvas-container"></div>
+                <div id="playback-controls">
+                    <button id="play-btn" disabled>Play</button>
+                    <button id="pause-btn" disabled>Pause</button>
+                    <div id="progress-container">
+                        <div id="progress-bar"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+        
+        <div id="vr-view" class="hidden">
+            <div id="vr-interface">
+                <div id="vr-menu">
+                    <div class="vr-menu-item" id="vr-upload">Upload Map</div>
+                    <div class="vr-menu-item" id="vr-play">Play</div>
+                    <div class="vr-menu-item" id="vr-pause">Pause</div>
+                    <div class="vr-menu-item" id="vr-exit">Exit VR</div>
+                </div>
+            </div>
+            <div id="vr-canvas-container"></div>
+        </div>
+    </div>
+    
+    <script type="module" src="app.js"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
+
