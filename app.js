@@ -1,86 +1,67 @@
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { VRButton } from 'three/addons/webxr/VRButton.js';
-import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+import { state } from './state.js';
+import { logStatus } from './utils/logger.js';
+import { checkVRSupport } from './vr/vrManager.js';
+import { setupThreeJS } from './visualization/threeManager.js';
+import { processMap } from './files/mapLoader.js';
+import { playMap, pauseMap } from './audio/audioManager.js';
 
-import * as dom from './dom.js';
-import * as ui from './ui.js';
-import * as file from './file.js';
-import * as map from './map.js';
-import * as audio from './audio.js';
-import * as visualization from './visualization.js';
+// DOM Elements
+const uploadInput = document.getElementById('map-upload');
+const fileNameDisplay = document.getElementById('file-name');
+const processBtn = document.getElementById('process-btn');
+const playBtn = document.getElementById('play-btn');
+const pauseBtn = document.getElementById('pause-btn');
 
-// Create a global state object to share between modules
-const state = {
-    isVRSupported: false,
-    isInVR: false,
-    currentMap: null,
-    currentDifficulty: null,
-    isPlaying: false,
-    extractedFiles: null,
-    audio: null,
-    beatLength: 0
-};
-
-// Export the state for other modules to access
-window.appState = state;
-
+// Initialize application
 function init() {
-    ui.logStatus("Initializing application...");
+    logStatus("Initializing application...");
     checkVRSupport();
     setupEventListeners();
-    visualization.setupThreeJS(state);
-    ui.logStatus("Application initialized and ready!");
+    setupThreeJS();
+    logStatus("Application initialized and ready!");
 }
 
-function checkVRSupport() {
-    if ('xr' in navigator) {
-        navigator.xr.isSessionSupported('immersive-vr')
-            .then(supported => {
-                state.isVRSupported = supported;
-                ui.updateVRStatus(supported);
-                ui.logStatus(`VR ${supported ? 'is' : 'is not'} supported`);
-            })
-            .catch(error => {
-                state.isVRSupported = false;
-                ui.updateVRStatus(false);
-                ui.logStatus(`Error checking VR support: ${error.message}`, true);
-            });
+// Set up event listeners
+function setupEventListeners() {
+    uploadInput.addEventListener('change', handleFileSelect);
+    processBtn.addEventListener('click', handleProcessMap);
+    playBtn.addEventListener('click', playMap);
+    pauseBtn.addEventListener('click', pauseMap);
+}
+
+// Handle file selection
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (file.name.endsWith('.zip')) {
+        fileNameDisplay.textContent = file.name;
+        processBtn.disabled = false;
+        logStatus(`File selected: ${file.name}`);
     } else {
-        state.isVRSupported = false;
-        ui.updateVRStatus(false);
-        ui.logStatus("WebXR not available in this browser", true);
+        fileNameDisplay.textContent = "Invalid file format (must be .zip)";
+        processBtn.disabled = true;
+        logStatus("Invalid file format. Please select a .zip file.", true);
     }
 }
 
-function setupVRControllers(renderer, scene) {
-    // This is a placeholder for VR controller setup
-    // Implementation would go here when VR functionality is expanded
+// Handle process map button click
+async function handleProcessMap() {
+    try {
+        const file = uploadInput.files[0];
+        if (!file) return;
+        
+        processBtn.disabled = true;
+        const success = await processMap(file);
+        
+        if (!success) {
+            processBtn.disabled = false;
+        }
+    } catch (error) {
+        logStatus(`Error in process map handler: ${error.message}`, true);
+        processBtn.disabled = false;
+    }
 }
 
-function onSessionStart() {
-    state.isInVR = true;
-    dom.vrView.classList.remove('hidden');
-    dom.desktopView.classList.add('hidden');
-    visualization.onWindowResize();
-}
-
-function onSessionEnd() {
-    state.isInVR = false;
-    dom.vrView.classList.add('hidden');
-    dom.desktopView.classList.remove('hidden');
-    visualization.onWindowResize();
-}
-
-function setupEventListeners() {
-    dom.uploadInput.addEventListener('change', (event) => file.handleFileSelect(event, ui));
-    dom.processBtn.addEventListener('click', () => file.processMap(state, ui, map, audio, visualization));
-    dom.playBtn.addEventListener('click', () => audio.playMap(state, ui, visualization));
-    dom.pauseBtn.addEventListener('click', () => audio.pauseMap(state, ui));
-}
-
+// Initialize application when document is ready
 document.addEventListener('DOMContentLoaded', init);
-
-// Export functions needed by other modules
-export { setupVRControllers, onSessionStart, onSessionEnd };
-
