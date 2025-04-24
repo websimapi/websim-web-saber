@@ -27,6 +27,7 @@ const state = {
     isPlaying: false,
     audio: null,
     audioContext: null,
+    audioSource: null,
     startTime: 0,
     beatLength: 0,
     renderer: null,
@@ -35,7 +36,11 @@ const state = {
     controllers: [],
     notes: [],
     obstacles: [],
-    extractedFiles: null
+    extractedFiles: null,
+    noteObjects: [],       // Storing actual 3D objects
+    obstacleObjects: [],   // Storing actual 3D objects
+    playerArea: null,      // Visual representation of player area
+    noteSpeed: 4,          // Speed at which notes travel
 };
 
 // Initialize application
@@ -193,11 +198,16 @@ function displayMapInfo(infoData) {
             <div class="difficulties-list">
     `;
     
-    infoData._difficultyBeatmapSets.forEach(set => {
-        set._difficultyBeatmaps.forEach(diff => {
-            html += `<div class="difficulty-item" data-file="${diff._beatmapFilename}">${diff._difficulty}</div>`;
+    // Check different formats for difficulty data
+    if (infoData._difficultyBeatmapSets && Array.isArray(infoData._difficultyBeatmapSets)) {
+        infoData._difficultyBeatmapSets.forEach(set => {
+            if (set._difficultyBeatmaps && Array.isArray(set._difficultyBeatmaps)) {
+                set._difficultyBeatmaps.forEach(diff => {
+                    html += `<div class="difficulty-item" data-file="${diff._beatmapFilename}">${diff._difficulty}</div>`;
+                });
+            }
         });
-    });
+    }
     
     html += `
             </div>
@@ -221,7 +231,9 @@ function displayMapInfo(infoData) {
     });
     
     // Automatically load the first difficulty
-    if (infoData._difficultyBeatmapSets.length > 0 && 
+    if (infoData._difficultyBeatmapSets && 
+        infoData._difficultyBeatmapSets.length > 0 && 
+        infoData._difficultyBeatmapSets[0]._difficultyBeatmaps && 
         infoData._difficultyBeatmapSets[0]._difficultyBeatmaps.length > 0) {
         const firstDifficulty = infoData._difficultyBeatmapSets[0]._difficultyBeatmaps[0];
         loadDifficulty(firstDifficulty._beatmapFilename);
@@ -251,6 +263,9 @@ async function loadDifficulty(difficultyFile) {
         
         // Clear existing notes and obstacles
         clearVisualization();
+        
+        // Create player area
+        createPlayerArea();
         
         // Prepare notes and obstacles for visualization
         prepareVisualization(diffData);
@@ -292,14 +307,8 @@ async function loadAudio(audioFile) {
         // Decode audio data
         const audioBuffer = await state.audioContext.decodeAudioData(audioData);
         
-        // Create audio source
-        if (state.audio) {
-            state.audio.disconnect();
-        }
-        
-        state.audio = state.audioContext.createBufferSource();
-        state.audio.buffer = audioBuffer;
-        state.audio.connect(state.audioContext.destination);
+        // Store the audio buffer
+        state.audio = audioBuffer;
         
         logStatus("Audio loaded successfully!");
     } catch (error) {
@@ -315,20 +324,23 @@ function playMap() {
     }
     
     try {
-        // Create new audio source if needed
-        if (state.isPlaying) {
-            pauseMap();
+        // Stop any existing audio source
+        if (state.audioSource) {
+            state.audioSource.stop();
         }
         
         // Create a new audio source
-        state.audio = state.audioContext.createBufferSource();
-        state.audio.buffer = state.audio.buffer;
-        state.audio.connect(state.audioContext.destination);
+        state.audioSource = state.audioContext.createBufferSource();
+        state.audioSource.buffer = state.audio;
+        state.audioSource.connect(state.audioContext.destination);
         
         // Start playback
-        state.audio.start();
+        state.audioSource.start();
         state.startTime = state.audioContext.currentTime;
         state.isPlaying = true;
+        
+        // Reset note positions
+        resetNotePositions();
         
         // Update UI
         playBtn.disabled = true;
@@ -343,12 +355,29 @@ function playMap() {
     }
 }
 
+// Reset note positions to their original positions
+function resetNotePositions() {
+    if (state.currentDifficulty) {
+        // Clear existing visualization
+        clearVisualization();
+        
+        // Recreate player area
+        createPlayerArea();
+        
+        // Prepare visualization again
+        prepareVisualization(state.currentDifficulty);
+    }
+}
+
 // Pause the map
 function pauseMap() {
     if (!state.isPlaying) return;
     
     try {
-        state.audio.stop();
+        if (state.audioSource) {
+            state.audioSource.stop();
+            state.audioSource = null;
+        }
         state.isPlaying = false;
         
         // Update UI
@@ -394,6 +423,9 @@ function setupThreeJS() {
     const gridHelper = new THREE.GridHelper(20, 20);
     state.scene.add(gridHelper);
     
+    // Create player area visualization
+    createPlayerArea();
+    
     // Add VR button if supported
     if (state.isVRSupported) {
         document.body.appendChild(VRButton.createButton(state.renderer));
@@ -421,6 +453,60 @@ function setupThreeJS() {
     
     // Handle window resize
     window.addEventListener('resize', onWindowResize);
+}
+
+// Create a visual representation of the player area
+function createPlayerArea() {
+    // Remove existing player area if present
+    if (state.playerArea) {
+        state.scene.remove(state.playerArea);
+        state.playerArea = null;
+    }
+    
+    // Create a group to hold all player area elements
+    const playerArea = new THREE.Group();
+    
+    // Create a floor plate
+    const floorGeometry = new THREE.PlaneGeometry(4, 4);
+    const floorMaterial = new THREE.MeshBasicMaterial({
+        color: 0x333333,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.5
+    });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0;
+    playerArea.add(floor);
+    
+    // Create grid for the playable area (4x3 grid)
+    const gridMaterial = new THREE.LineBasicMaterial({ color: 0x555555 });
+    
+    // Horizontal lines
+    for (let i = 0; i <= 3; i++) {
+        const y = i * 0.6;
+        const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(-1.2, y, 0),
+            new THREE.Vector3(1.2, y, 0)
+        ]);
+        const line = new THREE.Line(lineGeometry, gridMaterial);
+        playerArea.add(line);
+    }
+    
+    // Vertical lines
+    for (let i = 0; i <= 4; i++) {
+        const x = (i - 2) * 0.6;
+        const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(x, 0, 0),
+            new THREE.Vector3(x, 1.8, 0)
+        ]);
+        const line = new THREE.Line(lineGeometry, gridMaterial);
+        playerArea.add(line);
+    }
+    
+    // Add the player area to the scene
+    state.scene.add(playerArea);
+    state.playerArea = playerArea;
 }
 
 // Set up VR controllers
@@ -463,21 +549,24 @@ function onWindowResize() {
 // Clear visualization
 function clearVisualization() {
     // Remove existing notes and obstacles
-    state.notes.forEach(note => {
+    state.noteObjects.forEach(note => {
         state.scene.remove(note);
     });
     
-    state.obstacles.forEach(obstacle => {
+    state.obstacleObjects.forEach(obstacle => {
         state.scene.remove(obstacle);
     });
     
-    state.notes = [];
-    state.obstacles = [];
+    state.noteObjects = [];
+    state.obstacleObjects = [];
 }
 
 // Prepare visualization
 function prepareVisualization(diffData) {
     try {
+        // Debug the structure of the data
+        logStatus("Preparing map visualization...");
+        
         // Handle different Beat Saber map formats
         // Check for v2 format (_notes property)
         if (diffData._notes && Array.isArray(diffData._notes)) {
@@ -493,7 +582,8 @@ function prepareVisualization(diffData) {
                 createNoteObjectV3(note);
             });
         } else {
-            logStatus("No notes found in the difficulty file", true);
+            logStatus("No notes found or unsupported format in the difficulty file", true);
+            console.warn("Difficulty data:", diffData);
         }
         
         // Handle obstacles (walls)
@@ -509,6 +599,8 @@ function prepareVisualization(diffData) {
                 createObstacleObjectV3(obstacle);
             });
         }
+        
+        logStatus(`Map visualization ready: ${state.noteObjects.length} notes, ${state.obstacleObjects.length} obstacles`);
     } catch (error) {
         logStatus(`Error preparing visualization: ${error.message}`, true);
         console.error("Error in prepareVisualization:", error);
@@ -530,15 +622,21 @@ function createNoteObject(noteData) {
     // Position based on note data
     // Convert from Beat Saber coordinate system to Three.js
     mesh.position.x = (noteData._lineIndex - 1.5) * 0.6; // Center on the grid
-    mesh.position.y = (noteData._lineLayer * 0.6) + 1.0;  // Height starts at 1.0
-    mesh.position.z = -noteData._time * 2.0;             // Notes come from negative z
+    mesh.position.y = (noteData._lineLayer * 0.6) + 0.2;  // Height starts at 0.2
+    mesh.position.z = -noteData._time * state.noteSpeed;  // Notes come from negative z
+    
+    // Store the beat time for animation
+    mesh.userData = {
+        beatTime: noteData._time,
+        type: 'note'
+    };
     
     // Add direction indicator
     addDirectionIndicator(mesh, noteData._cutDirection);
     
     // Add to scene and track it
     state.scene.add(mesh);
-    state.notes.push(mesh);
+    state.noteObjects.push(mesh);
     
     return mesh;
 }
@@ -558,15 +656,21 @@ function createNoteObjectV3(noteData) {
     // Position based on V3 note data
     // In V3, positions are stored in x,y,z properties
     mesh.position.x = (noteData.x - 1.5) * 0.6; // Center on the grid
-    mesh.position.y = (noteData.y * 0.6) + 1.0;  // Height starts at 1.0
-    mesh.position.z = -noteData.b * 2.0;         // Notes come from negative z (b is beat time)
+    mesh.position.y = (noteData.y * 0.6) + 0.2;  // Height starts at 0.2
+    mesh.position.z = -noteData.b * state.noteSpeed;  // Notes come from negative z (b is beat time)
+    
+    // Store the beat time for animation
+    mesh.userData = {
+        beatTime: noteData.b,
+        type: 'note'
+    };
     
     // Add direction indicator (in V3, it's "d" for direction)
     addDirectionIndicator(mesh, noteData.d);
     
     // Add to scene and track it
     state.scene.add(mesh);
-    state.notes.push(mesh);
+    state.noteObjects.push(mesh);
     
     return mesh;
 }
@@ -638,11 +742,18 @@ function createObstacleObject(obstacleData) {
     // Position based on obstacle data
     mesh.position.x = (obstacleData._lineIndex - 1.5) * 0.6 + (width / 2) - 0.3;
     mesh.position.y = (height / 2);
-    mesh.position.z = -obstacleData._time * 2.0 - (depth / 2);
+    mesh.position.z = -obstacleData._time * state.noteSpeed - (depth / 2);
+    
+    // Store the beat time for animation
+    mesh.userData = {
+        beatTime: obstacleData._time,
+        duration: obstacleData._duration,
+        type: 'obstacle'
+    };
     
     // Add to scene and track it
     state.scene.add(mesh);
-    state.obstacles.push(mesh);
+    state.obstacleObjects.push(mesh);
     
     return mesh;
 }
@@ -666,11 +777,18 @@ function createObstacleObjectV3(obstacleData) {
     // Position based on V3 obstacle data
     mesh.position.x = (obstacleData.x - 1.5) * 0.6 + (width / 2) - 0.3;
     mesh.position.y = obstacleData.y * 0.6 + (height / 2);
-    mesh.position.z = -obstacleData.b * 2.0 - (depth / 2); // b is the beat time
+    mesh.position.z = -obstacleData.b * state.noteSpeed - (depth / 2); // b is the beat time
+    
+    // Store the beat time for animation
+    mesh.userData = {
+        beatTime: obstacleData.b,
+        duration: obstacleData.d,
+        type: 'obstacle'
+    };
     
     // Add to scene and track it
     state.scene.add(mesh);
-    state.obstacles.push(mesh);
+    state.obstacleObjects.push(mesh);
     
     return mesh;
 }
@@ -683,7 +801,7 @@ function animate() {
     updateVisualization();
 }
 
-// Update visualization
+// Update visualization based on current time
 function updateVisualization() {
     if (!state.isPlaying || !state.audioContext) return;
     
@@ -691,14 +809,33 @@ function updateVisualization() {
     const currentBeat = currentTime / state.beatLength;
     
     // Update progress bar
-    if (state.audio && state.audio.buffer) {
-        const progress = (currentTime / state.audio.buffer.duration) * 100;
+    if (state.audio) {
+        const progress = (currentTime / state.audio.duration) * 100;
         progressBar.style.width = `${progress}%`;
     }
     
-    // Calculate player position for visualizing notes
-    // In Beat Saber, notes move toward the player at a constant speed
-    // Here we're moving the notes based on the current beat
+    // Move notes and obstacles based on current beat
+    state.noteObjects.forEach(note => {
+        // Calculate position based on beat time and current beat
+        const beatDifference = note.userData.beatTime - currentBeat;
+        note.position.z = beatDifference * state.noteSpeed;
+        
+        // Remove notes that have passed the player
+        if (beatDifference < -1) {
+            state.scene.remove(note);
+        }
+    });
+    
+    // Move obstacles similarly
+    state.obstacleObjects.forEach(obstacle => {
+        const beatDifference = obstacle.userData.beatTime - currentBeat;
+        obstacle.position.z = beatDifference * state.noteSpeed;
+        
+        // Remove obstacles that have passed the player
+        if (beatDifference < -1) {
+            state.scene.remove(obstacle);
+        }
+    });
 }
 
 // Render function (called by animation loop)
