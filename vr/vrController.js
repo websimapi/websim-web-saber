@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
-import { state } from '../app.js';
+import { state } from '../state.js';
 
 // Set up VR controllers
 export function setupVRControllers() {
