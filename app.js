@@ -244,6 +244,9 @@ async function loadDifficulty(difficultyFile) {
         const diffContent = await file.async("text");
         const diffData = JSON.parse(diffContent);
         
+        // Log the difficulty structure to help with debugging
+        console.log("Difficulty data structure:", diffData);
+        
         state.currentDifficulty = diffData;
         
         // Clear existing notes and obstacles
@@ -474,20 +477,45 @@ function clearVisualization() {
 
 // Prepare visualization
 function prepareVisualization(diffData) {
-    // Create note objects
-    diffData._notes.forEach(note => {
-        createNoteObject(note);
-    });
-    
-    // Create obstacle objects
-    if (diffData._obstacles) {
-        diffData._obstacles.forEach(obstacle => {
-            createObstacleObject(obstacle);
-        });
+    try {
+        // Handle different Beat Saber map formats
+        // Check for v2 format (_notes property)
+        if (diffData._notes && Array.isArray(diffData._notes)) {
+            logStatus("Using V2 note format (_notes)");
+            diffData._notes.forEach(note => {
+                createNoteObject(note);
+            });
+        } 
+        // Check for v3 format (colorNotes property)
+        else if (diffData.colorNotes && Array.isArray(diffData.colorNotes)) {
+            logStatus("Using V3 note format (colorNotes)");
+            diffData.colorNotes.forEach(note => {
+                createNoteObjectV3(note);
+            });
+        } else {
+            logStatus("No notes found in the difficulty file", true);
+        }
+        
+        // Handle obstacles (walls)
+        if (diffData._obstacles && Array.isArray(diffData._obstacles)) {
+            logStatus("Using V2 obstacle format (_obstacles)");
+            diffData._obstacles.forEach(obstacle => {
+                createObstacleObject(obstacle);
+            });
+        } 
+        else if (diffData.obstacles && Array.isArray(diffData.obstacles)) {
+            logStatus("Using V3 obstacle format (obstacles)");
+            diffData.obstacles.forEach(obstacle => {
+                createObstacleObjectV3(obstacle);
+            });
+        }
+    } catch (error) {
+        logStatus(`Error preparing visualization: ${error.message}`, true);
+        console.error("Error in prepareVisualization:", error);
     }
 }
 
-// Create a 3D object for a note
+// Create a 3D object for a note (v2 format)
 function createNoteObject(noteData) {
     const geometry = new THREE.BoxGeometry(0.4, 0.4, 0.4);
     
@@ -507,6 +535,34 @@ function createNoteObject(noteData) {
     
     // Add direction indicator
     addDirectionIndicator(mesh, noteData._cutDirection);
+    
+    // Add to scene and track it
+    state.scene.add(mesh);
+    state.notes.push(mesh);
+    
+    return mesh;
+}
+
+// Create a 3D object for a note (v3 format)
+function createNoteObjectV3(noteData) {
+    const geometry = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+    
+    // Red for left hand, blue for right hand (assuming color 0 = red, 1 = blue)
+    const material = new THREE.MeshLambertMaterial({ 
+        color: noteData.color === 0 ? 0xff0055 : 0x00a1ff,
+        emissive: noteData.color === 0 ? 0x660022 : 0x003366,
+    });
+    
+    const mesh = new THREE.Mesh(geometry, material);
+    
+    // Position based on V3 note data
+    // In V3, positions are stored in x,y,z properties
+    mesh.position.x = (noteData.x - 1.5) * 0.6; // Center on the grid
+    mesh.position.y = (noteData.y * 0.6) + 1.0;  // Height starts at 1.0
+    mesh.position.z = -noteData.b * 2.0;         // Notes come from negative z (b is beat time)
+    
+    // Add direction indicator (in V3, it's "d" for direction)
+    addDirectionIndicator(mesh, noteData.d);
     
     // Add to scene and track it
     state.scene.add(mesh);
@@ -564,7 +620,7 @@ function addDirectionIndicator(noteMesh, direction) {
     noteMesh.add(arrow);
 }
 
-// Create a 3D object for an obstacle
+// Create a 3D object for an obstacle (v2 format)
 function createObstacleObject(obstacleData) {
     const width = obstacleData._width * 0.6;
     const height = obstacleData._type === 0 ? 3.0 : 1.0; // Full height or half height
@@ -583,6 +639,34 @@ function createObstacleObject(obstacleData) {
     mesh.position.x = (obstacleData._lineIndex - 1.5) * 0.6 + (width / 2) - 0.3;
     mesh.position.y = (height / 2);
     mesh.position.z = -obstacleData._time * 2.0 - (depth / 2);
+    
+    // Add to scene and track it
+    state.scene.add(mesh);
+    state.obstacles.push(mesh);
+    
+    return mesh;
+}
+
+// Create a 3D object for an obstacle (v3 format)
+function createObstacleObjectV3(obstacleData) {
+    // In V3, wall width is defined by w, height by h, and duration by d
+    const width = obstacleData.w * 0.6;
+    const height = obstacleData.h * 0.6;
+    const depth = obstacleData.d * 2.0;
+    
+    const geometry = new THREE.BoxGeometry(width, height, depth);
+    const material = new THREE.MeshLambertMaterial({ 
+        color: 0xff0000,
+        transparent: true,
+        opacity: 0.5
+    });
+    
+    const mesh = new THREE.Mesh(geometry, material);
+    
+    // Position based on V3 obstacle data
+    mesh.position.x = (obstacleData.x - 1.5) * 0.6 + (width / 2) - 0.3;
+    mesh.position.y = obstacleData.y * 0.6 + (height / 2);
+    mesh.position.z = -obstacleData.b * 2.0 - (depth / 2); // b is the beat time
     
     // Add to scene and track it
     state.scene.add(mesh);
