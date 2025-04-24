@@ -398,7 +398,7 @@ function setupThreeJS() {
     
     // Create camera
     state.camera = new THREE.PerspectiveCamera(75, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 1000);
-    state.camera.position.set(0, 1.6, 3);
+    state.camera.position.set(0, 1.6, -3); // Move behind the player to see notes coming
     
     // Create renderer
     state.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -623,7 +623,7 @@ function createNoteObject(noteData) {
     // Convert from Beat Saber coordinate system to Three.js
     mesh.position.x = (noteData._lineIndex - 1.5) * 0.6; // Center on the grid
     mesh.position.y = (noteData._lineLayer * 0.6) + 0.2;  // Height starts at 0.2
-    mesh.position.z = -noteData._time * state.noteSpeed;  // Notes come from negative z
+    mesh.position.z = noteData._time * state.noteSpeed;  // Notes come from positive z
     
     // Store the beat time for animation
     mesh.userData = {
@@ -657,7 +657,7 @@ function createNoteObjectV3(noteData) {
     // In V3, positions are stored in x,y,z properties
     mesh.position.x = (noteData.x - 1.5) * 0.6; // Center on the grid
     mesh.position.y = (noteData.y * 0.6) + 0.2;  // Height starts at 0.2
-    mesh.position.z = -noteData.b * state.noteSpeed;  // Notes come from negative z (b is beat time)
+    mesh.position.z = noteData.b * state.noteSpeed;  // Notes come from positive z
     
     // Store the beat time for animation
     mesh.userData = {
@@ -675,7 +675,7 @@ function createNoteObjectV3(noteData) {
     return mesh;
 }
 
-// Add a direction indicator to a note
+// Add a direction indicator to a note - fixed arrow direction
 function addDirectionIndicator(noteMesh, direction) {
     // Skip for dot notes (direction 8)
     if (direction === 8) return;
@@ -685,39 +685,39 @@ function addDirectionIndicator(noteMesh, direction) {
     const arrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
     
     // Position at the center of the note
-    arrow.position.set(0, 0, 0.2);
+    arrow.position.set(0, 0, -0.2); // Move to front face of cube (-z direction)
     
-    // Rotate based on direction
+    // Rotate based on direction - fix the rotation to match Beat Saber
     // 0 = up, 1 = down, 2 = left, 3 = right,
     // 4 = up-left, 5 = up-right, 6 = down-left, 7 = down-right
     switch (direction) {
         case 0: // Up
-            arrow.rotation.x = Math.PI / 2;
-            break;
-        case 1: // Down
             arrow.rotation.x = -Math.PI / 2;
             break;
-        case 2: // Left
-            arrow.rotation.z = Math.PI / 2;
+        case 1: // Down
+            arrow.rotation.x = Math.PI / 2;
             break;
-        case 3: // Right
+        case 2: // Left
             arrow.rotation.z = -Math.PI / 2;
             break;
+        case 3: // Right
+            arrow.rotation.z = Math.PI / 2;
+            break;
         case 4: // Up-Left
-            arrow.rotation.x = Math.PI / 4;
-            arrow.rotation.z = Math.PI / 4;
+            arrow.rotation.x = -Math.PI / 4;
+            arrow.rotation.z = -Math.PI / 4;
             break;
         case 5: // Up-Right
-            arrow.rotation.x = Math.PI / 4;
-            arrow.rotation.z = -Math.PI / 4;
-            break;
-        case 6: // Down-Left
             arrow.rotation.x = -Math.PI / 4;
             arrow.rotation.z = Math.PI / 4;
             break;
-        case 7: // Down-Right
-            arrow.rotation.x = -Math.PI / 4;
+        case 6: // Down-Left
+            arrow.rotation.x = Math.PI / 4;
             arrow.rotation.z = -Math.PI / 4;
+            break;
+        case 7: // Down-Right
+            arrow.rotation.x = Math.PI / 4;
+            arrow.rotation.z = Math.PI / 4;
             break;
     }
     
@@ -739,10 +739,10 @@ function createObstacleObject(obstacleData) {
     
     const mesh = new THREE.Mesh(geometry, material);
     
-    // Position based on obstacle data
+    // Position based on obstacle data - fixed direction
     mesh.position.x = (obstacleData._lineIndex - 1.5) * 0.6 + (width / 2) - 0.3;
     mesh.position.y = (height / 2);
-    mesh.position.z = -obstacleData._time * state.noteSpeed - (depth / 2);
+    mesh.position.z = obstacleData._time * state.noteSpeed + (depth / 2);
     
     // Store the beat time for animation
     mesh.userData = {
@@ -774,10 +774,10 @@ function createObstacleObjectV3(obstacleData) {
     
     const mesh = new THREE.Mesh(geometry, material);
     
-    // Position based on V3 obstacle data
+    // Position based on V3 obstacle data - fixed direction
     mesh.position.x = (obstacleData.x - 1.5) * 0.6 + (width / 2) - 0.3;
     mesh.position.y = obstacleData.y * 0.6 + (height / 2);
-    mesh.position.z = -obstacleData.b * state.noteSpeed - (depth / 2); // b is the beat time
+    mesh.position.z = obstacleData.b * state.noteSpeed + (depth / 2); // b is the beat time
     
     // Store the beat time for animation
     mesh.userData = {
@@ -814,11 +814,11 @@ function updateVisualization() {
         progressBar.style.width = `${progress}%`;
     }
     
-    // Move notes and obstacles based on current beat
+    // Move notes and obstacles based on current beat - fixed direction
     state.noteObjects.forEach(note => {
         // Calculate position based on beat time and current beat
         const beatDifference = note.userData.beatTime - currentBeat;
-        note.position.z = beatDifference * state.noteSpeed;
+        note.position.z = note.userData.beatTime * state.noteSpeed - (currentBeat * state.noteSpeed);
         
         // Remove notes that have passed the player
         if (beatDifference < -1) {
@@ -826,10 +826,11 @@ function updateVisualization() {
         }
     });
     
-    // Move obstacles similarly
+    // Move obstacles similarly - fixed direction
     state.obstacleObjects.forEach(obstacle => {
         const beatDifference = obstacle.userData.beatTime - currentBeat;
-        obstacle.position.z = beatDifference * state.noteSpeed;
+        const depth = obstacle.geometry.parameters.depth;
+        obstacle.position.z = obstacle.userData.beatTime * state.noteSpeed - (currentBeat * state.noteSpeed) + (depth / 2);
         
         // Remove obstacles that have passed the player
         if (beatDifference < -1) {
