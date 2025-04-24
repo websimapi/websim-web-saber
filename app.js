@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
-import JSZip from 'jszip';
 
 // DOM Elements
 const uploadInput = document.getElementById('map-upload');
@@ -641,4 +640,3 @@ function logStatus(message, isError = false) {
 
 // Initialize application when document is ready
 document.addEventListener('DOMContentLoaded', init);
-
