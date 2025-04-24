@@ -2,6 +2,7 @@ import { state } from '../state.js';
 import { logStatus } from '../utils/logger.js';
 import { updatePlaybackControls, updateProgressBar } from '../utils/uiManager.js';
 import { resetNotePositions, animateNotes } from '../visualization/noteAnimator.js';
+import { enterVRMode } from '../vr/vrManager.js';
 
 // Load audio file
 export async function loadAudio(audioFile) {
@@ -36,6 +37,11 @@ export function playMap() {
     }
     
     try {
+        // Check if VR is supported and enter VR mode if it is
+        if (state.isVRSupported) {
+            enterVRMode();
+        }
+        
         // Stop any existing audio source
         if (state.audioSource) {
             state.audioSource.stop();

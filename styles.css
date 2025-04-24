@@ -33,8 +33,6 @@ header {
     margin-bottom: 20px;
     padding-bottom: 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    flex-wrap: wrap;
-    gap: 10px;
 }
 
 h1 {
@@ -43,7 +41,6 @@ h1 {
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    margin-right: auto;
 }
 
 #vr-status {
@@ -490,69 +487,6 @@ button:disabled {
     width: 100%;
 }
 
-/* Beat Sage Button Styling */
-#beat-sage-button {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1000;
-    margin-right: 15px;
-}
-
-.beat-sage-link {
-    display: block;
-    padding: 8px 15px;
-    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-    color: white;
-    text-decoration: none;
-    border-radius: var(--border-radius);
-    font-weight: bold;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    transition: transform 0.3s, box-shadow 0.3s;
-    position: relative;
-    font-size: 0.9rem;
-}
-
-.beat-sage-link:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
-}
-
-.beat-sage-link .tooltip {
-    visibility: hidden;
-    width: 250px;
-    background-color: rgba(0, 0, 0, 0.8);
-    color: #fff;
-    text-align: center;
-    border-radius: 6px;
-    padding: 10px;
-    position: absolute;
-    z-index: 1;
-    bottom: 125%;
-    left: 50%;
-    transform: translateX(-50%);
-    opacity: 0;
-    transition: opacity 0.3s;
-    font-weight: normal;
-    font-size: 0.9rem;
-}
-
-.beat-sage-link .tooltip::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    margin-left: -5px;
-    border-width: 5px;
-    border-style: solid;
-    border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
-}
-
-.beat-sage-link:hover .tooltip {
-    visibility: visible;
-    opacity: 1;
-}
-
 /* Responsive Adjustments */
 @media (max-width: 768px) {
     #desktop-view {
@@ -564,16 +498,8 @@ button:disabled {
         align-items: flex-start;
     }
     
-    #beat-sage-button {
-        margin-right: 0;
-        margin-bottom: 10px;
-        order: 2;
-    }
-    
     #vr-status {
         margin-top: 10px;
-        order: 3;
-        width: 100%;
     }
     
     .upload-container {
@@ -611,19 +537,5 @@ button:disabled {
     .modal-content {
         width: 95%;
         margin: 5% auto;
-    }
-    
-    #beat-sage-button {
-        bottom: 10px;
-        right: 10px;
-    }
-    
-    .beat-sage-link {
-        padding: 10px 15px;
-        font-size: 0.9rem;
-    }
-    
-    .beat-sage-link .tooltip {
-        width: 200px;
     }
 }

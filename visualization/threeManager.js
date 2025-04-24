@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { state } from '../state.js';
-import { setupVRControllers } from '../vr/vrController.js';
+import { setupVRControllers, updateVRControllers } from '../vr/vrController.js';
 
 // Set up Three.js environment
 export function setupThreeJS() {
@@ -67,6 +67,10 @@ function setupVRSessionEvents() {
         state.isInVR = true;
         vrView.classList.remove('hidden');
         desktopView.classList.add('hidden');
+        
+        // Position the camera at the player position in Beat Saber
+        // In Beat Saber, the player stands at the origin, facing forward
+        positionVRCamera();
     });
     
     // Handle exiting VR
@@ -75,6 +79,15 @@ function setupVRSessionEvents() {
         vrView.classList.add('hidden');
         desktopView.classList.remove('hidden');
     });
+}
+
+// Position VR camera for Beat Saber-like experience
+function positionVRCamera() {
+    // In Beat Saber, the player stands at the origin, facing the notes
+    // This is already set by default in VR, but we adjust the reference space if needed
+    
+    // The height is set automatically by the VR system
+    // No need to set state.camera.position as that's handled by the VR system
 }
 
 // Handle window resize
@@ -87,5 +100,10 @@ export function onWindowResize() {
 
 // Render function (called by animation loop)
 export function render() {
+    // Update VR controllers if in VR mode
+    if (state.isInVR) {
+        updateVRControllers();
+    }
+    
     state.renderer.render(state.scene, state.camera);
 }

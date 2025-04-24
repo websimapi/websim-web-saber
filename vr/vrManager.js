@@ -21,3 +21,38 @@ export function checkVRSupport() {
     }
 }
 
+// Enter VR mode
+export function enterVRMode() {
+    if (!state.isVRSupported || state.isInVR) return;
+    
+    logStatus("Entering VR mode...");
+    
+    try {
+        // Request a VR session using the VR button programmatically
+        const enterVRButton = document.querySelector('button.VRButton');
+        if (enterVRButton) {
+            enterVRButton.click();
+            logStatus("VR session requested");
+        } else {
+            logStatus("VR button not found, cannot enter VR mode automatically", true);
+        }
+    } catch (error) {
+        logStatus(`Error entering VR mode: ${error.message}`, true);
+    }
+}
+
+// Exit VR mode
+export function exitVRMode() {
+    if (!state.isInVR) return;
+    
+    logStatus("Exiting VR mode...");
+    
+    try {
+        if (state.renderer && state.renderer.xr) {
+            state.renderer.xr.getSession().end();
+            logStatus("VR session ended");
+        }
+    } catch (error) {
+        logStatus(`Error exiting VR mode: ${error.message}`, true);
+    }
+}

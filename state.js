@@ -14,6 +14,7 @@ export const state = {
     scene: null,
     camera: null,
     controllers: [],
+    sabers: [],
     notes: [],
     obstacles: [],
     extractedFiles: null,
