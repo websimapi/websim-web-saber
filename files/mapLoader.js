@@ -1,5 +1,5 @@
 import { state } from '../state.js';
-import { logStatus, logMapInfo } from '../utils/logger.js';
+import { logStatus } from '../utils/logger.js';
 import { displayMapInfo } from '../utils/uiManager.js';
 import { loadAudio } from '../audio/audioManager.js';
 import { loadDifficulty } from './difficultyLoader.js';
@@ -67,9 +67,6 @@ export async function processMap(file) {
         // Store the map data
         state.currentMap = infoData;
         state.beatLength = 60 / infoData._beatsPerMinute;
-        
-        // Log detailed map info
-        logMapInfo(infoData);
         
         // Load and display map information
         displayMapInfo(infoData);

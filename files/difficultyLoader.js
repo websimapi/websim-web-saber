@@ -18,8 +18,8 @@ export async function loadDifficulty(difficultyFile) {
         const diffContent = await file.async("text");
         const diffData = JSON.parse(diffContent);
         
-        // Log the difficulty details
-        logDifficultyInfo(diffData, difficultyFile);
+        // Log the difficulty structure to help with debugging
+        console.log("Difficulty data structure:", diffData);
         
         state.currentDifficulty = diffData;
         
@@ -41,39 +41,4 @@ export async function loadDifficulty(difficultyFile) {
         logStatus(`Error loading difficulty: ${error.message}`, true);
         return false;
     }
-}
-
-// Log detailed information about the difficulty
-function logDifficultyInfo(diffData, filename) {
-    // Count notes and obstacles
-    const noteCount = diffData._notes?.length || diffData.colorNotes?.length || 0;
-    const obstacleCount = diffData._obstacles?.length || diffData.obstacles?.length || 0;
-    const eventCount = diffData._events?.length || diffData.basicBeatmapEvents?.length || 0;
-    
-    logStatus("------------------ DIFFICULTY INFORMATION ------------------");
-    logStatus(`Difficulty File: ${filename}`);
-    logStatus(`Note Count: ${noteCount}`);
-    logStatus(`Obstacle Count: ${obstacleCount}`);
-    logStatus(`Event Count: ${eventCount}`);
-    
-    // Check for map format version
-    if (diffData._version) {
-        logStatus(`Map Format Version: ${diffData._version}`);
-    }
-    
-    // Check for any custom data
-    if (diffData._customData) {
-        logStatus("This difficulty contains custom data");
-        
-        // Log specific custom data if present
-        if (diffData._customData._requirements) {
-            logStatus(`Requirements: ${diffData._customData._requirements.join(', ')}`);
-        }
-        
-        if (diffData._customData._suggestions) {
-            logStatus(`Suggestions: ${diffData._customData._suggestions.join(', ')}`);
-        }
-    }
-    
-    logStatus("------------------------------------------------------------");
 }
