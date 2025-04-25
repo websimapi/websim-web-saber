@@ -13,8 +13,10 @@ export const state = {
     renderer: null,
     scene: null,
     camera: null,
+    controls: null,
     controllers: [],
-    sabers: [],
+    playerGroup: null,
+    referenceSpace: null,
     notes: [],
     obstacles: [],
     extractedFiles: null,
@@ -22,5 +24,6 @@ export const state = {
     obstacleObjects: [],
     playerArea: null,
     noteSpeed: 4,
+    environment: null,
 };
 

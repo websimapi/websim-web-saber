@@ -7,14 +7,7 @@ export function animateNotes() {
     if (!state.isPlaying) return;
     
     requestAnimationFrame(animateNotes);
-    
-    // Only update notes if not in VR (VR has its own update cycle)
-    if (!state.isInVR) {
-        updateVisualization();
-    } else {
-        // In VR, we still need to update audio progress
-        updateAudioProgress();
-    }
+    updateVisualization();
 }
 
 // Update visualization based on current time

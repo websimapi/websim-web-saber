@@ -47,6 +47,18 @@ function init() {
     setupEventListeners();
     setupThreeJS();
     loadInitialGallery();
+    
+    // Check for VR button display
+    setTimeout(() => {
+        if (state.isVRSupported) {
+            document.querySelector('#vr-status').innerHTML = 'VR Status: Supported - <a href="#" id="enter-vr">Enter VR</a>';
+            document.querySelector('#enter-vr').addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelector('button.VRButton').click();
+            });
+        }
+    }, 1000);
+    
     logStatus("Application initialized and ready!");
 }
 
