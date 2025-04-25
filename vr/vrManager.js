@@ -35,7 +35,7 @@ export function checkVRSupport() {
     }
 }
 
-// Enter VR mode - can be called directly when user clicks play
+// Enter VR mode - properly using WebXR API
 export function enterVRMode() {
     if (!state.isVRSupported) {
         logStatus("VR is not supported on this device", true);
@@ -43,18 +43,29 @@ export function enterVRMode() {
     }
 
     try {
-        // Trigger the VR button click
+        // Try finding the VR button created by Three.js
         const vrButton = document.querySelector('button.VRButton');
         if (vrButton) {
             vrButton.click();
+            logStatus("VR mode requested via VRButton");
             return true;
         } else {
-            // If button not found, try requesting the session directly
-            if (state.renderer && state.renderer.xr) {
-                state.renderer.xr.startSession();
-                return true;
+            // Direct WebXR API approach if button not found
+            if (navigator.xr && state.renderer) {
+                // Use the proper WebXR API to request a session
+                navigator.xr.requestSession('immersive-vr', {
+                    optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking']
+                }).then((session) => {
+                    state.renderer.xr.setSession(session);
+                    logStatus("VR session started via WebXR API");
+                    return true;
+                }).catch(error => {
+                    logStatus(`Error starting VR session: ${error.message}`, true);
+                    return false;
+                });
+                return true; // We initiated the request
             }
-            logStatus("VR button not found and direct session start failed", true);
+            logStatus("VR button not found and WebXR API request failed", true);
             return false;
         }
     } catch (error) {
@@ -96,13 +107,14 @@ export function setupVRPlayerPosition() {
 
 // Set up a local reference space for proper positioning
 function setupVRReferenceSpace() {
-    if (!state.renderer.xr.getSession()) {
+    const session = state.renderer.xr.getSession();
+    if (!session) {
         logStatus("No VR session available for reference space setup", true);
         return;
     }
     
     // Try to get floor level reference space first (ideal for Quest)
-    state.renderer.xr.getSession().requestReferenceSpace('local-floor')
+    session.requestReferenceSpace('local-floor')
         .then(refSpace => {
             state.referenceSpace = refSpace;
             logStatus("VR floor reference space established");
@@ -110,7 +122,7 @@ function setupVRReferenceSpace() {
         .catch(error => {
             // Fallback to local reference space
             logStatus("Floor reference space failed, trying local space", true);
-            state.renderer.xr.getSession().requestReferenceSpace('local')
+            session.requestReferenceSpace('local')
                 .then(refSpace => {
                     state.referenceSpace = refSpace;
                     logStatus("VR local reference space established");

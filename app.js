@@ -70,6 +70,41 @@ function init() {
     logStatus("Application initialized and ready!");
 }
 
+// Handle play button click - now with VR support
+function handlePlayButtonClick() {
+    // Check if VR is supported and we should enter VR mode first
+    if (state.isVRSupported && !state.isInVR) {
+        // Try to enter VR mode first, then play
+        const vrEntered = enterVRMode();
+        
+        // Set a flag to autoplay once VR is entered
+        if (vrEntered) {
+            state.autoPlayAfterVREntry = true;
+            
+            // Listen for session start (one-time event)
+            const sessionStartListener = () => {
+                // Play the map after a short delay to let VR settle
+                setTimeout(() => {
+                    playMap();
+                }, 1000);
+                
+                // Remove listener after first execution
+                state.renderer.xr.removeEventListener('sessionstart', sessionStartListener);
+            };
+            
+            state.renderer.xr.addEventListener('sessionstart', sessionStartListener);
+            
+            logStatus("Entering VR before playing map...");
+        } else {
+            // If VR entry failed, just play normally
+            playMap();
+        }
+    } else {
+        // Just play the map normally
+        playMap();
+    }
+}
+
 // Set up event listeners
 function setupEventListeners() {
     uploadInput.addEventListener('change', handleFileSelect);
@@ -111,41 +146,6 @@ function setupEventListeners() {
     
     document.getElementById('vr-play').addEventListener('click', playMap);
     document.getElementById('vr-pause').addEventListener('click', pauseMap);
-}
-
-// Handle play button click - now with VR support
-function handlePlayButtonClick() {
-    // Check if VR is supported and we should enter VR mode first
-    if (state.isVRSupported && !state.isInVR) {
-        // Try to enter VR mode first, then play
-        const vrEntered = enterVRMode();
-        
-        // Set a flag to autoplay once VR is entered
-        if (vrEntered) {
-            state.autoPlayAfterVREntry = true;
-            
-            // Listen for session start (one-time event)
-            const sessionStartListener = () => {
-                // Play the map after a short delay to let VR settle
-                setTimeout(() => {
-                    playMap();
-                }, 1000);
-                
-                // Remove listener after first execution
-                state.renderer.xr.removeEventListener('sessionstart', sessionStartListener);
-            };
-            
-            state.renderer.xr.addEventListener('sessionstart', sessionStartListener);
-            
-            logStatus("Entering VR before playing map...");
-        } else {
-            // If VR entry failed, just play normally
-            playMap();
-        }
-    } else {
-        // Just play the map normally
-        playMap();
-    }
 }
 
 // Handle file selection

@@ -21,8 +21,12 @@ export function setupThreeJS() {
     state.camera = new THREE.PerspectiveCamera(75, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 1000);
     state.camera.position.set(0, 1.6, -3); // Standard position for desktop view
     
-    // Create renderer
-    state.renderer = new THREE.WebGLRenderer({ antialias: true });
+    // Create renderer with proper XR configuration
+    state.renderer = new THREE.WebGLRenderer({ 
+        antialias: true,
+        alpha: true,
+        powerPreference: 'high-performance'
+    });
     state.renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
     state.renderer.xr.enabled = true;
     state.renderer.shadowMap.enabled = true;
@@ -44,28 +48,38 @@ export function setupThreeJS() {
     // Add VR environment
     addVREnvironment();
     
-    // Add VR button if supported
-    if (state.isVRSupported) {
-        const vrButton = VRButton.createButton(state.renderer);
-        vrButton.style.position = 'absolute';
-        vrButton.style.bottom = '20px';
-        vrButton.style.right = '20px';
-        vrButton.style.zIndex = '100';
-        document.body.appendChild(vrButton);
-        
-        // Set up VR controllers
-        setupVRControllers();
-        
-        // Handle VR session events
-        setupVRSessionEvents();
-        
-        // Setup VR player position
-        setupVRPlayerPosition();
-        
-        logStatus("VR integration ready");
-    }
+    // Add VR button if supported - ensure proper WebXR setup
+    // Wait for DOM to be ready
+    setTimeout(() => {
+        if (state.isVRSupported) {
+            try {
+                // Create proper VR button with more robust error handling
+                const vrButton = VRButton.createButton(state.renderer);
+                vrButton.style.position = 'absolute';
+                vrButton.style.bottom = '20px';
+                vrButton.style.right = '20px';
+                vrButton.style.zIndex = '100';
+                document.body.appendChild(vrButton);
+                
+                logStatus("VR button created successfully");
+                
+                // Set up VR controllers
+                setupVRControllers();
+                
+                // Handle VR session events
+                setupVRSessionEvents();
+                
+                // Setup VR player position
+                setupVRPlayerPosition();
+                
+                logStatus("VR integration ready");
+            } catch (error) {
+                logStatus(`Error setting up VR: ${error.message}`, true);
+            }
+        }
+    }, 500);
     
-    // Start animation loop
+    // Start animation loop with explicit binding to renderer
     state.renderer.setAnimationLoop(render);
     
     // Handle window resize

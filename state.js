@@ -27,5 +27,7 @@ export const state = {
     playerArea: null,
     noteSpeed: 4,
     environment: null,
+    vrOrientation: null,
+    vrButtonCreated: false,
 };
 
