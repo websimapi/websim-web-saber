@@ -46,6 +46,11 @@ export function playMap() {
         state.audioSource.buffer = state.audio;
         state.audioSource.connect(state.audioContext.destination);
         
+        // Resume AudioContext if it's suspended (needed for newer browsers)
+        if (state.audioContext.state === 'suspended') {
+            state.audioContext.resume();
+        }
+        
         // Start playback
         state.audioSource.start();
         state.startTime = state.audioContext.currentTime;
@@ -60,9 +65,24 @@ export function playMap() {
         // Start animation
         animateNotes();
         
-        logStatus("Playback started");
+        // Make sure VR view notes are properly positioned if in VR
+        if (state.isInVR) {
+            correctVRNoteDirection();
+        }
+        
+        logStatus(`Playback started${state.isInVR ? ' in VR mode' : ''}`);
     } catch (error) {
         logStatus(`Error starting playback: ${error.message}`, true);
+    }
+}
+
+// Ensure correct note direction in VR
+function correctVRNoteDirection() {
+    // In VR, notes should come toward the player
+    if (state.noteSpeed > 0) {
+        state.noteSpeed = -4; // Reverse direction for VR
+        // Reposition notes with new direction
+        resetNotePositions();
     }
 }
 

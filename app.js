@@ -1,6 +1,6 @@
 import { state } from './state.js';
 import { logStatus } from './utils/logger.js';
-import { checkVRSupport } from './vr/vrManager.js';
+import { checkVRSupport, enterVRMode } from './vr/vrManager.js';
 import { setupThreeJS } from './visualization/threeManager.js';
 import { processMap } from './files/mapLoader.js';
 import { playMap, pauseMap } from './audio/audioManager.js';
@@ -60,12 +60,7 @@ function init() {
                 if (enterVRLink) {
                     enterVRLink.addEventListener('click', (e) => {
                         e.preventDefault();
-                        const vrButton = document.querySelector('button.VRButton');
-                        if (vrButton) {
-                            vrButton.click();
-                        } else {
-                            logStatus("VR button not found. Try refreshing the page.", true);
-                        }
+                        enterVRMode();
                     });
                 }
             }
@@ -80,7 +75,7 @@ function setupEventListeners() {
     uploadInput.addEventListener('change', handleFileSelect);
     processBtn.addEventListener('click', handleProcessMap);
     shareBtn.addEventListener('click', handleShareButtonClick);
-    playBtn.addEventListener('click', playMap);
+    playBtn.addEventListener('click', handlePlayButtonClick);
     pauseBtn.addEventListener('click', pauseMap);
     
     // Tab switching
@@ -106,6 +101,51 @@ function setupEventListeners() {
     
     // Live updates for gallery
     subscribeToGalleryUpdates(updateGalleryDisplay);
+    
+    // VR view controls
+    document.getElementById('vr-exit').addEventListener('click', () => {
+        if (state.renderer && state.renderer.xr) {
+            state.renderer.xr.getSession()?.end();
+        }
+    });
+    
+    document.getElementById('vr-play').addEventListener('click', playMap);
+    document.getElementById('vr-pause').addEventListener('click', pauseMap);
+}
+
+// Handle play button click - now with VR support
+function handlePlayButtonClick() {
+    // Check if VR is supported and we should enter VR mode first
+    if (state.isVRSupported && !state.isInVR) {
+        // Try to enter VR mode first, then play
+        const vrEntered = enterVRMode();
+        
+        // Set a flag to autoplay once VR is entered
+        if (vrEntered) {
+            state.autoPlayAfterVREntry = true;
+            
+            // Listen for session start (one-time event)
+            const sessionStartListener = () => {
+                // Play the map after a short delay to let VR settle
+                setTimeout(() => {
+                    playMap();
+                }, 1000);
+                
+                // Remove listener after first execution
+                state.renderer.xr.removeEventListener('sessionstart', sessionStartListener);
+            };
+            
+            state.renderer.xr.addEventListener('sessionstart', sessionStartListener);
+            
+            logStatus("Entering VR before playing map...");
+        } else {
+            // If VR entry failed, just play normally
+            playMap();
+        }
+    } else {
+        // Just play the map normally
+        playMap();
+    }
 }
 
 // Handle file selection

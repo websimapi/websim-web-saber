@@ -212,6 +212,17 @@ function setupVRSessionEvents() {
         // Set note direction for VR (coming towards the player)
         state.noteSpeed = -4; // Reverse speed so notes come toward the player
         
+        // Reposition the player area for VR
+        if (state.playerArea) {
+            // Position play area directly in front of the user
+            state.playerArea.position.z = 2; // 2 meters in front of the user
+            state.playerArea.position.y = 0; // At floor level
+            state.playerArea.rotation.y = 0; // Facing the user
+            
+            // Add extra visual elements to help orient the player
+            addVROrientationHelpers();
+        }
+        
         logStatus("Entered VR mode");
     });
     
@@ -236,8 +247,79 @@ function setupVRSessionEvents() {
         // Reset note direction for desktop view
         state.noteSpeed = 4;
         
+        // If a song is playing, reset note positions with the new direction
+        if (state.isPlaying) {
+            resetNotePositions();
+        }
+        
         logStatus("Exited VR mode");
     });
+}
+
+// Help users orient themselves in VR with visual guides
+function addVROrientationHelpers() {
+    if (!state.scene || state.vrOrientation) return;
+    
+    // Create a group for orientation helpers
+    const orientationGroup = new THREE.Group();
+    state.scene.add(orientationGroup);
+    state.vrOrientation = orientationGroup;
+    
+    // Add a floor marker
+    const floorGeometry = new THREE.CircleGeometry(0.5, 32);
+    const floorMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0x00ffff,
+        transparent: true,
+        opacity: 0.3,
+        side: THREE.DoubleSide
+    });
+    const floorMarker = new THREE.Mesh(floorGeometry, floorMaterial);
+    floorMarker.rotation.x = -Math.PI / 2;
+    floorMarker.position.set(0, 0.01, 0); // Just above the floor
+    orientationGroup.add(floorMarker);
+    
+    // Add player position marker (where you should stand)
+    const standHereGeometry = new THREE.CircleGeometry(0.2, 32);
+    const standHereMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffff00,
+        transparent: true,
+        opacity: 0.5
+    });
+    const standHere = new THREE.Mesh(standHereGeometry, standHereMaterial);
+    standHere.rotation.x = -Math.PI / 2;
+    standHere.position.set(0, 0.02, 0); // Just above the floor marker
+    orientationGroup.add(standHere);
+    
+    // Add text to indicate "stand here"
+    const textParams = {
+        font: 'bold 20px Arial',
+        fillStyle: 'white',
+        textAlign: 'center'
+    };
+    
+    // Create canvas for texture
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.font = textParams.font;
+    ctx.fillStyle = textParams.fillStyle;
+    ctx.textAlign = textParams.textAlign;
+    ctx.fillText('STAND HERE', canvas.width/2, canvas.height/2);
+    
+    // Create texture from canvas
+    const texture = new THREE.CanvasTexture(canvas);
+    const textMaterial = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        side: THREE.DoubleSide
+    });
+    
+    const textGeometry = new THREE.PlaneGeometry(1, 0.5);
+    const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+    textMesh.position.set(0, 0.3, 0); // Above the stand here marker
+    textMesh.rotation.x = -Math.PI / 2;
+    orientationGroup.add(textMesh);
 }
 
 // Handle window resize

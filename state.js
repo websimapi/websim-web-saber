@@ -1,7 +1,9 @@
 // Application state management
 export const state = {
     isVRSupported: false,
+    isOculusQuest: false,
     isInVR: false,
+    autoPlayAfterVREntry: false,
     currentMap: null,
     currentDifficulty: null,
     isPlaying: false,
