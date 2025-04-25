@@ -48,16 +48,29 @@ function init() {
     setupThreeJS();
     loadInitialGallery();
     
-    // Check for VR button display
+    // Check for VR button display with improved reliability
     setTimeout(() => {
         if (state.isVRSupported) {
-            document.querySelector('#vr-status').innerHTML = 'VR Status: Supported - <a href="#" id="enter-vr">Enter VR</a>';
-            document.querySelector('#enter-vr').addEventListener('click', (e) => {
-                e.preventDefault();
-                document.querySelector('button.VRButton').click();
-            });
+            const vrStatusElement = document.querySelector('#vr-status');
+            if (vrStatusElement) {
+                vrStatusElement.innerHTML = 'VR Status: Supported - <a href="#" id="enter-vr">Enter VR</a>';
+                
+                // Add event listener after adding the element to DOM
+                const enterVRLink = document.querySelector('#enter-vr');
+                if (enterVRLink) {
+                    enterVRLink.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const vrButton = document.querySelector('button.VRButton');
+                        if (vrButton) {
+                            vrButton.click();
+                        } else {
+                            logStatus("VR button not found. Try refreshing the page.", true);
+                        }
+                    });
+                }
+            }
         }
-    }, 1000);
+    }, 2000); // Increased timeout to ensure ThreeJS has time to create VR button
     
     logStatus("Application initialized and ready!");
 }
