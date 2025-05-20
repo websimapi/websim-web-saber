@@ -4,7 +4,13 @@ import { logStatus } from './logger.js';
 // Update VR Status Display
 export function updateVRStatus() {
     const vrStatus = document.getElementById('vr-status');
-    vrStatus.textContent = `VR Status: ${state.isVRSupported ? 'Supported' : 'Not Supported'}`;
+    
+    if (state.vrHeadset) {
+        vrStatus.textContent = `VR Status: ${state.isVRSupported ? 'Supported' : 'Not Supported'} (${state.vrHeadset})`;
+    } else {
+        vrStatus.textContent = `VR Status: ${state.isVRSupported ? 'Supported' : 'Not Supported'}`;
+    }
+    
     vrStatus.style.backgroundColor = state.isVRSupported ? '#1a6e1a' : '#6e1a1a';
 }
 

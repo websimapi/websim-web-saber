@@ -53,45 +53,9 @@ export function createPlayerArea() {
         playerArea.add(line);
     }
     
-    // Add lane dividers for better visualization
-    for (let i = 0; i < 4; i++) {
-        const x = (i - 1.5) * 0.6;
-        const laneGeometry = new THREE.PlaneGeometry(0.05, 1.8);
-        const laneMaterial = new THREE.MeshBasicMaterial({
-            color: 0x333333,
-            transparent: true,
-            opacity: 0.3,
-            side: THREE.DoubleSide
-        });
-        const lane = new THREE.Mesh(laneGeometry, laneMaterial);
-        lane.position.set(x, 0.9, 0);
-        playerArea.add(lane);
-    }
-    
-    // Add a back wall to help with orientation
-    const wallGeometry = new THREE.PlaneGeometry(4, 1.8);
-    const wallMaterial = new THREE.MeshBasicMaterial({
-        color: 0x222222,
-        transparent: true,
-        opacity: 0.5
-    });
-    const backWall = new THREE.Mesh(wallGeometry, wallMaterial);
-    backWall.position.set(0, 0.9, -2);
-    playerArea.add(backWall);
-    
-    // Position the player area appropriately for VR or desktop
-    if (state.isInVR) {
-        playerArea.position.z = 2; // Position in front of the player in VR
-        playerArea.position.y = 0; // At floor level
-    } else {
-        playerArea.position.z = 0; // Default position for desktop
-    }
-    
     // Add the player area to the scene
     state.scene.add(playerArea);
     state.playerArea = playerArea;
-    
-    logStatus("Player area created and positioned");
 }
 
 // Clear visualization

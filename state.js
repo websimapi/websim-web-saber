@@ -1,9 +1,9 @@
 // Application state management
 export const state = {
     isVRSupported: false,
-    isOculusQuest: false,
     isInVR: false,
-    autoPlayAfterVREntry: false,
+    vrHeadset: null, // Will store detected headset model
+    vrQualityLevel: 'medium', // 'low', 'medium', 'high' based on headset
     currentMap: null,
     currentDifficulty: null,
     isPlaying: false,
@@ -17,8 +17,8 @@ export const state = {
     camera: null,
     controls: null,
     controllers: [],
-    playerGroup: null,
-    referenceSpace: null,
+    vrMenu: null,
+    vrMenuItems: [],
     notes: [],
     obstacles: [],
     extractedFiles: null,
@@ -26,8 +26,6 @@ export const state = {
     obstacleObjects: [],
     playerArea: null,
     noteSpeed: 4,
-    environment: null,
-    vrOrientation: null,
-    vrButtonCreated: false,
+    score: 0,
 };
 
